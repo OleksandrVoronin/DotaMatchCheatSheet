@@ -9,18 +9,21 @@ import java.util.ArrayList;
 public class UIHandler extends JFrame {
 
     JButtonLink[] nameButtons = new JButtonLink[10];
+    JLabel[] estimatedMMRLabel = new JLabel[10];
     JLabel[] winsLosesLabels = new JLabel[10];
     JLabel[] winRateLabels = new JLabel[10];
     JLabel[] kdaLabels = new JLabel[10];
     JLabel[] mostPlayedLabels = new JLabel[10];
 
-    final Color radiantColor = new Color(232, 255, 230);
-    final Color direColor = new Color(255, 241, 234);
+    final Color radiantColor = new Color(245, 255, 245);
+    final Color direColor = new Color(255, 245, 245);
 
     final Color goodStatGreen = new Color(255, 45, 56);
     final Color badStatRed = new Color(57, 204, 103);
 
-    final String NO_DATA = " No data. ";
+    final Color separatorColor = new Color(0, 0, 0, 80);
+
+    final String NO_DATA = "";
 
     public UIHandler() {
         super();
@@ -32,6 +35,7 @@ public class UIHandler extends JFrame {
 
 
         this.add(initNamesPanel());
+        this.add(initEstimatedMMRLabel());
         this.add(initWinsLosesPanel());
         this.add(initWinrateLabels());
         this.add(initKDALabels());
@@ -41,20 +45,21 @@ public class UIHandler extends JFrame {
     }
 
     public JPanel initNamesPanel() {
+        JPanel panel = new JPanel(new BorderLayout());
         JPanel names = new JPanel(new GridLayout(10, 1));
 
         for(int i = 0; i < 10; i++) {
             JButtonLink button = new JButtonLink(NO_DATA);
-            button.setBorder(BorderFactory.createLineBorder(Color.BLACK, 1));
+            button.setBorder(BorderFactory.createMatteBorder(1, 0, 1, 0, separatorColor));
 
-            button.setPreferredSize(new Dimension(100, 45));
+            button.setPreferredSize(new Dimension(120, 45));
 
             button.addActionListener(e -> openPage(button.link));
 
             if(i < 5)
-                button.setBackground(interpolateColor(radiantColor, Color.WHITE, 0.1f));
+                button.setBackground(interpolateColor(radiantColor, Color.BLACK, 0.05f));
             else
-                button.setBackground(interpolateColor(direColor, Color.WHITE, 0.1f));
+                button.setBackground(interpolateColor(direColor, Color.BLACK, 0.05f));
 
             button.setOpaque(true);
 
@@ -62,17 +67,54 @@ public class UIHandler extends JFrame {
             names.add(button);
         }
 
-        return names;
+        panel.add(names, BorderLayout.CENTER);
+
+        JLabel header = new JLabel("Player name:", SwingConstants.CENTER);
+        header.setPreferredSize(new Dimension(120, 35));
+        panel.add(header, BorderLayout.NORTH);
+
+        return panel;
+    }
+
+    public JPanel initEstimatedMMRLabel() {
+        JPanel panel = new JPanel(new BorderLayout());
+        JPanel estimatedMMR = new JPanel(new GridLayout(10, 1));
+
+        for(int i = 0; i < 10; i++) {
+            JLabel label = new JLabel(NO_DATA, SwingConstants.CENTER);
+            label.setBorder(BorderFactory.createMatteBorder(1, 0, 1, 0, separatorColor));
+
+            label.setPreferredSize(new Dimension(110, 45));
+
+            if(i < 5)
+                label.setBackground(radiantColor);
+            else
+                label.setBackground(direColor);
+
+            label.setOpaque(true);
+
+            estimatedMMRLabel[i] = label;
+            estimatedMMR.add(label);
+        }
+
+        panel.add(estimatedMMR, BorderLayout.CENTER);
+
+        JLabel header = new JLabel("Estimated MMR:", SwingConstants.CENTER);
+        header.setPreferredSize(new Dimension(100, 35));
+        panel.add(header, BorderLayout.NORTH);
+
+        return panel;
     }
 
     public JPanel initWinsLosesPanel() {
+        JPanel panel = new JPanel(new BorderLayout());
         JPanel winsLoses = new JPanel(new GridLayout(10, 1));
 
         for(int i = 0; i < 10; i++) {
-            JLabel label = new JLabel(NO_DATA);
-            label.setBorder(BorderFactory.createLineBorder(Color.BLACK, 1));
+            JLabel label = new JLabel(NO_DATA, SwingConstants.CENTER);
+            label.setBorder(BorderFactory.createMatteBorder(1, 0, 1, 0, separatorColor));
 
-            label.setPreferredSize(new Dimension(135, 45));
+            label.setPreferredSize(new Dimension(110, 45));
 
             if(i < 5)
                 label.setBackground(radiantColor);
@@ -85,17 +127,24 @@ public class UIHandler extends JFrame {
             winsLoses.add(label);
         }
 
-        return winsLoses;
+        panel.add(winsLoses, BorderLayout.CENTER);
+
+        JLabel header = new JLabel("Wins/Loses:", SwingConstants.CENTER);
+        header.setPreferredSize(new Dimension(100, 35));
+        panel.add(header, BorderLayout.NORTH);
+
+        return panel;
     }
 
     public JPanel initWinrateLabels() {
+        JPanel panel = new JPanel(new BorderLayout());
         JPanel winRate = new JPanel(new GridLayout(10, 1));
 
         for(int i = 0; i < 10; i++) {
-            JLabel label = new JLabel(NO_DATA);
-            label.setBorder(BorderFactory.createLineBorder(Color.BLACK, 1));
+            JLabel label = new JLabel(NO_DATA, SwingConstants.CENTER);
+            label.setBorder(BorderFactory.createMatteBorder(1, 0, 1, 0, separatorColor));
 
-            label.setPreferredSize(new Dimension(120, 45));
+            label.setPreferredSize(new Dimension(110, 45));
 
             if(i < 5)
                 label.setBackground(radiantColor);
@@ -108,17 +157,24 @@ public class UIHandler extends JFrame {
             winRate.add(label);
         }
 
-        return winRate;
+        panel.add(winRate, BorderLayout.CENTER);
+
+        JLabel header = new JLabel("Win rate:", SwingConstants.CENTER);
+        header.setPreferredSize(new Dimension(100, 35));
+        panel.add(header, BorderLayout.NORTH);
+
+        return panel;
     }
 
     public JPanel initKDALabels() {
+        JPanel panel = new JPanel(new BorderLayout());
         JPanel kda = new JPanel(new GridLayout(10, 1));
 
         for(int i = 0; i < 10; i++) {
-            JLabel label = new JLabel(NO_DATA);
-            label.setBorder(BorderFactory.createLineBorder(Color.BLACK, 1));
+            JLabel label = new JLabel(NO_DATA, SwingConstants.CENTER);
+            label.setBorder(BorderFactory.createMatteBorder(1, 0, 1, 0, separatorColor));
 
-            label.setPreferredSize(new Dimension(120, 45));
+            label.setPreferredSize(new Dimension(110, 45));
 
             if(i < 5)
                 label.setBackground(radiantColor);
@@ -131,15 +187,22 @@ public class UIHandler extends JFrame {
             kda.add(label);
         }
 
-        return kda;
+        panel.add(kda, BorderLayout.CENTER);
+
+        JLabel header = new JLabel("KDA:", SwingConstants.CENTER);
+        header.setPreferredSize(new Dimension(100, 35));
+        panel.add(header, BorderLayout.NORTH);
+
+        return panel;
     }
 
     public JPanel initMostPlayedLabels() {
+        JPanel panel = new JPanel(new BorderLayout());
         JPanel mostPlayed = new JPanel(new GridLayout(10, 1));
 
         for(int i = 0; i < 10; i++) {
-            JLabel label = new JLabel(NO_DATA);
-            label.setBorder(BorderFactory.createLineBorder(Color.BLACK, 1));
+            JLabel label = new JLabel(NO_DATA, SwingConstants.CENTER);
+            label.setBorder(BorderFactory.createMatteBorder(1, 0, 1, 0, separatorColor));
 
             label.setPreferredSize(new Dimension(350, 45));
 
@@ -154,21 +217,37 @@ public class UIHandler extends JFrame {
             mostPlayed.add(label);
         }
 
-        return mostPlayed;
+        panel.add(mostPlayed, BorderLayout.CENTER);
+
+        JLabel header = new JLabel("Most played heroes:", SwingConstants.CENTER);
+        header.setPreferredSize(new Dimension(100, 35));
+        panel.add(header, BorderLayout.NORTH);
+
+        return panel;
+    }
+
+    public void revalidateFrame() {
+        this.revalidate();
+        this.repaint();
     }
 
     public void setNameButton(String name, String URL, int index) {
         nameButtons[index].setText(" "  + name + " ");
         nameButtons[index].setLink(URL);
-        this.revalidate();
-        this.repaint();
+
+    }
+
+    public void setEstimatedMMR(int mmr, int index) {
+        if(mmr != Integer.MIN_VALUE) {
+            estimatedMMRLabel[index].setText(" " + mmr + " ");
+        }
     }
 
     public void setWinsLosesLabel(int wins, int loses, int abandoned, int index) {
         if(wins == 0 && loses == 0)
             winsLosesLabels[index].setText(NO_DATA);
         else {
-            String string = " W-L : " + wins + "-" + loses + " ";
+            String string = " " + wins + " / " + loses + " ";
             if(abandoned != 0)
                 string += "(ab. " + abandoned + ") ";
 
@@ -181,7 +260,7 @@ public class UIHandler extends JFrame {
         if(!Float.isNaN(winrate)) {
             String winrateString = String.format("%.2f", winrate);
             winRateLabels[index].setForeground(interpolateColor(goodStatGreen, badStatRed, winrate / 100f));
-            winRateLabels[index].setText(" " + winrateString + "% win rate ");
+            winRateLabels[index].setText(" " + winrateString + "% ");
         } else {
             winRateLabels[index].setForeground(Color.BLACK);
             winRateLabels[index].setText(NO_DATA);
@@ -192,10 +271,10 @@ public class UIHandler extends JFrame {
         if(!Float.isNaN(kda)) {
             String winrateString = String.format("%.2f", kda);
             kdaLabels[index].setForeground(interpolateColor(goodStatGreen, badStatRed, kda / 6f));
-            kdaLabels[index].setText(" " + winrateString + " KDA ");
+            kdaLabels[index].setText(" " + winrateString + " ");
         } else {
             kdaLabels[index].setForeground(Color.BLACK);
-            kdaLabels[index].setText(" No data. ");
+            kdaLabels[index].setText(NO_DATA);
         }
     }
 

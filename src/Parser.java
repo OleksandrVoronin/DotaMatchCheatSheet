@@ -1,11 +1,12 @@
-import org.jsoup.Jsoup;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
+import java.io.*;
+import java.net.URL;
+import java.net.URLConnection;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.PriorityQueue;
+import java.util.HashMap;
 import java.util.Scanner;
 
 public class Parser {
@@ -39,6 +40,8 @@ public class Parser {
     UIHandler uiHandler;
     ArrayList<String> ids = new ArrayList();
     String serverLog;
+    String heroNamesJson = "https://gist.githubusercontent.com/OleksandrVoronin/cc38fae587449279b36948efc99219d8/raw/0d840c7f845c35b259e0e9f07bd1bd0ffbd5af7f/DotaHeroNames.json";
+    HashMap<Integer, String> heroNamesHashMap = new HashMap<>();
 
     public Parser(String serverLog, UIHandler uiHandler) {
         this.uiHandler = uiHandler;
@@ -46,12 +49,15 @@ public class Parser {
     }
 
     public void parse() {
+
+        initHeroNamesArray();
         ids = parseIDs(getLastMatchString(serverLog));
 
         for(int i = 0; i < ids.size(); i++) {
             parseProfile(ids.get(i), i);
         }
-        //ids.forEach(parser::parseProfile);
+
+        uiHandler.revalidateFrame();
     }
 
     String getLastMatchString(String path) {
@@ -92,38 +98,57 @@ public class Parser {
     }
 
     void parseProfile(String id, int index) {
-        //System.out.println("ID: " + id);
-        String path = "https://www.dotabuff.com/players/" + id + "/matches?date=week";
-        //System.out.println(path);
 
         try {
-            String dotabuffPageSource = getURLSource(path);
 
-            int wins = dotabuffPageSource.split("Won Match").length - 1;
-            int loses = dotabuffPageSource.split("Lost Match").length - 1;
-            int abandoned = dotabuffPageSource.split("Abandoned").length - 1;
+            {   /** PARSE PROFILE INFO */
+                JSONObject profile = new JSONObject(readJsonFromUrl(
+                        "https://api.opendota.com/api/players/" + id));
 
-            float winRate = (float) wins / (float) (wins + loses) * 100;
-            String name = dotabuffPageSource.split("<title>")[1].split(" - ")[0];
+                String name = "<Anonymous>";
+                String path = "https://www.opendota.com/players/" + id + "/matches";
+                int estimatedMMR = Integer.MIN_VALUE;
 
-            uiHandler.setNameButton(name, path, index);
-            uiHandler.setWinsLosesLabel(wins, loses, abandoned, index);
-            uiHandler.setWinrateLabel(winRate, index);
+                if (profile.has("profile")) {
+                    name = profile.getJSONObject("profile").getString("personaname");
+                    estimatedMMR = profile.getJSONObject("mmr_estimate").getInt("estimate");
+                }
 
-
-            try {
-                float kda = Float.parseFloat(dotabuffPageSource.split("class=\"color-stat-kda\">")[1].split("</span>")[0]);
-                uiHandler.setKDALabel(kda, index);
-            } catch (Exception e) {
-                uiHandler.setKDALabel(Float.NaN, index);
+                uiHandler.setEstimatedMMR(estimatedMMR, index);
+                uiHandler.setNameButton(name, path, index);
             }
 
-            String[] heroPicks = dotabuffPageSource.split("</a><span class=");
-            ArrayList<HeroPick> heroPickArrayList = new ArrayList<>();
+            {   /** PARSE MATCH INFO */
+                JSONArray matches = new JSONArray(readJsonFromUrl(
+                        "https://api.opendota.com/api/players/" + id + "/matches?date=7&significant=1"));
 
-            for(int i = 0; i < heroPicks.length - 1; i++) {
-                try {
-                    String hero = heroPicks[i].split(">")[heroPicks[i].split(">").length - 1];
+                int wins = 0;
+                int loses = 0;
+
+                int killsStat = 0;
+                int assistsStat = 0;
+                int deathsStat = 0;
+
+                ArrayList<HeroPick> heroPickArrayList = new ArrayList<>();
+
+                for (int i = 0; i < matches.length(); i++) {
+                    int playerSlot = matches.getJSONObject(i).getInt("player_slot");
+                    boolean radiantWin = matches.getJSONObject(i).getBoolean("radiant_win");
+
+                    killsStat += matches.getJSONObject(i).getInt("kills");
+                    assistsStat += matches.getJSONObject(i).getInt("assists");
+                    deathsStat += matches.getJSONObject(i).getInt("deaths");
+
+                    if (radiantWin == playerSlot < 50)
+                        wins++;
+                    else
+                        loses++;
+
+                    String hero = heroNamesHashMap.get(matches.getJSONObject(i).getInt("hero_id"));
+
+                    if(hero == null)
+                        hero = "Unknown Hero";
+
                     boolean firstTimePicked = true;
 
                     for(HeroPick hp : heroPickArrayList) {
@@ -136,30 +161,65 @@ public class Parser {
                     if(firstTimePicked) {
                         heroPickArrayList.add(new HeroPick(hero));
                     }
-
-                } catch (Exception e) {
-                    System.out.println("Something went wrong");
                 }
+
+                Collections.sort(heroPickArrayList);
+                uiHandler.setMostPlayed(heroPickArrayList, index);
+
+                float winRate = (float) wins / (float) (wins + loses) * 100;
+                float kda = (killsStat + assistsStat) / (float) deathsStat;
+
+                uiHandler.setWinsLosesLabel(wins, loses, 0, index);
+                uiHandler.setWinrateLabel(winRate, index);
+                uiHandler.setKDALabel(kda, index);
             }
-
-            Collections.sort(heroPickArrayList);
-            uiHandler.setMostPlayed(heroPickArrayList, index);
-
-            /*if(wins + loses == 0)
-                System.out.println(name + " - NO DATA");
-            else
-                System.out.format(name + " - " + "W: " + wins + "; L: " + loses + " (%.2f percent)\n", winRate);*/
-        } catch (IOException e) {
+        } catch (Exception e) {
             e.printStackTrace();
-            System.out.println("Connection issue...");
         }
     }
 
-    static String getURLSource(String profileurl) throws IOException {
-        String fakeAgent = "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:5.0) Gecko/20100101 Firefox/5.0";
+    void initHeroNamesArray() {
+        try {
+            JSONObject jsonObject = new JSONObject(readJsonFromUrl(heroNamesJson));
+            JSONArray heroesArray = jsonObject.getJSONArray("heroes");
 
-        String source = Jsoup.connect(profileurl).userAgent(fakeAgent).timeout(0).get().html();
+            for(int i = 0; i < heroesArray.length(); i++) {
+                heroNamesHashMap.put(heroesArray.getJSONObject(i).getInt("id"),
+                        heroesArray.getJSONObject(i).getString("localized_name"));
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.out.println("Couldn't retrieve a hero names list!");
+        }
+    }
 
-        return source;
+    public static String readJsonFromUrl(String link) {
+        URL url;
+        URLConnection uc;
+
+        StringBuilder parsedContentFromUrl = new StringBuilder();
+
+        try {
+            url = new URL(link);
+
+            uc = url.openConnection();
+            uc.addRequestProperty("User-Agent",
+                    "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.0)");
+
+            uc.connect();
+
+            uc.getInputStream();
+            InputStreamReader reader = new InputStreamReader(uc.getInputStream(), "utf-8");
+
+            int ch;
+            while ((ch = reader.read()) != -1) {
+                parsedContentFromUrl.append((char) ch);
+            }
+            reader.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return parsedContentFromUrl.toString();
     }
 }
