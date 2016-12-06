@@ -1,7 +1,7 @@
 # DotaMatchCheatSheet
 
 A simple profile parser for Dota 2 to check player profiles while loading to the game.
-![Screenshot](https://pp.vk.me/c837530/v837530966/ee40/_pN5bS2se98.jpg)
+![Screenshot](https://pp.vk.me/c837530/v837530966/efe9/6w3uYspgT6g.jpg)
 
 To run, add a path to "...\dota 2 beta\game\dota" folder as an argument. I.e:
   DotaMatchCheatSheet.jar "C:/Program Files (x86)/Steam/steamapps/common/dota 2 beta/game/dota"
