@@ -40,7 +40,8 @@ public class Parser {
     UIHandler uiHandler;
     ArrayList<String> ids = new ArrayList();
     String serverLog;
-    String heroNamesJson = "https://gist.githubusercontent.com/OleksandrVoronin/cc38fae587449279b36948efc99219d8/raw/0d840c7f845c35b259e0e9f07bd1bd0ffbd5af7f/DotaHeroNames.json";
+    String heroNamesJson = "https://gist.githubusercontent.com/OleksandrVoronin/cc38fae587449279b36948efc99219d8/raw/3165e082c64821abf9e8cd1f6c93debf2f18f448/DotaHeroNames.json";
+    boolean parseForCmMode = true;
     HashMap<Integer, String> heroNamesHashMap = new HashMap<>();
 
     public Parser(String serverLog, UIHandler uiHandler) {
@@ -48,7 +49,8 @@ public class Parser {
         this.serverLog = serverLog;
     }
 
-    public void parse() {
+    public void parse(boolean cm) {
+        parseForCmMode = cm;
 
         initHeroNamesArray();
         ids = parseIDs(getLastMatchString(serverLog));
@@ -97,6 +99,8 @@ public class Parser {
         return ids;
     }
 
+
+
     void parseProfile(String id, int index) {
 
         try {
@@ -119,8 +123,11 @@ public class Parser {
             }
 
             {   /** PARSE MATCH INFO */
-                JSONArray matches = new JSONArray(readJsonFromUrl(
-                        "https://api.opendota.com/api/players/" + id + "/matches?date=7&significant=1"));
+                String matchQuery =
+                        "https://api.opendota.com/api/players/" + id + "/matches?date=7&significant=1";
+                if(parseForCmMode)
+                    matchQuery = "https://api.opendota.com/api/players/" + id + "/matches?date=31&significant=1&game_mode=2";
+                JSONArray matches = new JSONArray(readJsonFromUrl(matchQuery));
 
                 int wins = 0;
                 int loses = 0;

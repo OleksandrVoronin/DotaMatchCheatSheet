@@ -1,5 +1,3 @@
-import java.util.ArrayList;
-
 public class Main {
 
     public static void main(String[] args) {
@@ -15,11 +13,13 @@ public class Main {
 
         serverLog += "/server_log.txt";
 
-        UIHandler window = new UIHandler();
-        Parser parser = new Parser(serverLog, window);
-        window.setVisible(true);
+        {
+            UIHandler window = new UIHandler();
+            Parser parser = new Parser(serverLog, window);
+            window.setVisible(true);
 
-        parser.parse();
+            parser.parse(false);
+        }
     }
 
 
