@@ -40,9 +40,11 @@ public class Parser {
     UIHandler uiHandler;
     ArrayList<String> ids = new ArrayList();
     String serverLog;
-    String heroNamesJson = "https://gist.githubusercontent.com/OleksandrVoronin/cc38fae587449279b36948efc99219d8/raw/3165e082c64821abf9e8cd1f6c93debf2f18f448/DotaHeroNames.json";
+    String heroNamesJson = "http://api.steampowered.com/IEconDOTA2_570/GetHeroes/v1?key=48A32B90C04CFC588FCEC89B4AAF2B5C&language=us";
     boolean parseForCmMode = true;
     HashMap<Integer, String> heroNamesHashMap = new HashMap<>();
+
+    String[] rankNames = {"Unranked", "Herald", "Guardian", "Crusader", "Archon", "Legend", "Ancient", "Divine", "Immortal"};
 
     public Parser(String serverLog, UIHandler uiHandler) {
         this.uiHandler = uiHandler;
@@ -111,14 +113,23 @@ public class Parser {
 
                 String name = "<Anonymous>";
                 String path = "https://www.opendota.com/players/" + id + "/matches";
-                int estimatedMMR = Integer.MIN_VALUE;
+                String rankTier = "";
 
                 if (profile.has("profile")) {
                     name = profile.getJSONObject("profile").getString("personaname");
-                    estimatedMMR = profile.getJSONObject("mmr_estimate").getInt("estimate");
+                    if(profile.has("rank_tier") && !profile.isNull("rank_tier")) {
+                        int rankTierInt = profile.getInt("rank_tier");
+                        if (rankTierInt / 10 == 0) {
+                            rankTier = rankNames[rankTierInt / 10];
+                        } else if (rankTierInt / 10 == 8) {
+                            rankTier = rankNames[rankTierInt / 10] + " " + profile.getInt("leaderboard_rank");
+                        } else {
+                            rankTier = rankNames[rankTierInt / 10] + " " + (rankTierInt % 10);
+                        }
+                    }
                 }
 
-                uiHandler.setEstimatedMMR(estimatedMMR, index);
+                uiHandler.setEstimatedMMR(rankTier, index);
                 uiHandler.setNameButton(name, path, index);
             }
 
@@ -176,7 +187,12 @@ public class Parser {
                 float winRate = (float) wins / (float) (wins + loses) * 100;
                 float kda = (killsStat + assistsStat) / (float) deathsStat;
 
-                uiHandler.setWinsLosesLabel(wins, loses, 0, index);
+                String matchesWithMeQueury =
+                        "https://api.opendota.com/api/players/83934359/wl?included_account_id=" + id;
+                JSONObject matchesWithMe = new JSONObject(readJsonFromUrl(matchesWithMeQueury));
+
+                uiHandler.setWinsLosesLabel(wins, loses, index);
+                uiHandler.setWinsLosesWithMeLabel(matchesWithMe.getInt("win"), matchesWithMe.getInt("lose"), index);
                 uiHandler.setWinrateLabel(winRate, index);
                 uiHandler.setKDALabel(kda, index);
             }
@@ -188,7 +204,7 @@ public class Parser {
     void initHeroNamesArray() {
         try {
             JSONObject jsonObject = new JSONObject(readJsonFromUrl(heroNamesJson));
-            JSONArray heroesArray = jsonObject.getJSONArray("heroes");
+            JSONArray heroesArray = jsonObject.getJSONObject("result").getJSONArray("heroes");
 
             for(int i = 0; i < heroesArray.length(); i++) {
                 heroNamesHashMap.put(heroesArray.getJSONObject(i).getInt("id"),
